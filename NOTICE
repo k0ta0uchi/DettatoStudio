@@ -1,0 +1,25 @@
+Dettato Studio
+==============
+
+This application is an original GUI written for the dettato library.
+It does NOT contain a copy of the dettato source code in this repository;
+dettato is used as an external dependency (installed via pip from
+https://github.com/kobimusic/dettato).
+
+Third-party components
+----------------------
+- dettato (kobimusic/dettato) — Apache License 2.0
+  https://github.com/kobimusic/dettato
+  Model weights are downloaded at runtime from the Hugging Face Hub
+  (kobimusic/dettato, dettato-evidence, dettato-grouper, dettato-drums)
+  and are NOT included in this repository. Note: dettato's model cards
+  list training datasets, some of which carry non-commercial terms —
+  see the dettato repository / model cards for details.
+- PySide6 / Qt — LGPLv3 (dynamically linked; in PyInstaller builds it
+  ships as separate library files in _internal\)
+- PyTorch — BSD-style license (see PyTorch repository)
+- NumPy, soundfile, mido, huggingface_hub — see each project's license
+
+Binary distributions (exe builds) bundle the dependencies above inside
+_internal\, so when redistributing a built exe folder, keep this NOTICE
+and the LICENSE file with it.

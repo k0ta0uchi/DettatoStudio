@@ -1,0 +1,8 @@
+PySide6>=6.6.0
+numpy>=1.26
+soundfile>=0.12
+mido>=1.3
+huggingface_hub>=0.23
+# dettato本体（torch込みで重い。初回DLに時間がかかる）
+# torchは環境に合わせて自動で入る
+dettato @ git+https://github.com/kobimusic/dettato

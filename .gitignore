@@ -1,0 +1,10 @@
+venv/
+.build-venv/
+models/
+dist/
+build/
+__pycache__/
+*.log
+*.mid
+uv.exe
+DettatoStudio.exe
