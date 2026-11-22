@@ -88,6 +88,40 @@ def setup_venv(log) -> None:
     MARKER.write_text(req_hash(), encoding="utf-8")
     log("セットアップ完了")
 
+def models_ready() -> bool:
+    try:
+        sys.path.insert(0, str(BASE))
+        from model_manager import model_status, default_weights_dir
+        return all(ok for *_x, ok, _s in [(a, b, c, d) for a, b, c, d in model_status(default_weights_dir(BASE))])
+    except Exception:
+        return False
+
+def download_models(log, progress=None) -> None:
+    """venv の python で model_manager.py を実行し、モデルを自動DLする"""
+    sys.path.insert(0, str(BASE))
+    from model_manager import default_weights_dir
+    wd = default_weights_dir(BASE)
+    log("モデルをダウンロードします（4モデル、約110MB）…")
+    cmd = [str(VENV_PY), str(BASE / "model_manager.py"), str(wd)]
+    with open(LOG, "a", encoding="utf-8", errors="ignore") as lf:
+        proc = subprocess.Popen(cmd, cwd=str(BASE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                text=True, encoding="utf-8", errors="replace",
+                                creationflags=CREATE_NO_WINDOW)
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            line = line.rstrip(); lf.write(line + "\n"); lf.flush()
+            if line.startswith("PROGRESS "):
+                parts = line.split(" ", 2)
+                if progress and len(parts) >= 2 and parts[1].isdigit():
+                    progress(int(parts[1]), parts[2] if len(parts) > 2 else "")
+                if len(parts) > 2:
+                    log(parts[2])
+            elif line:
+                log(line)
+        rc = proc.wait()
+    if rc != 0:
+        raise RuntimeError(f"モデルのダウンロードが失敗しました (rc={rc})。詳細: {LOG.name}")
+
 def launch_app(args: list[str]) -> None:
     py = VENV_PYW if Path(VENV_PYW).exists() else VENV_PY
     subprocess.Popen([str(py), str(BASE / "app.py"), *args], cwd=str(BASE),
@@ -96,7 +130,7 @@ def launch_app(args: list[str]) -> None:
 def main() -> None:
     args = sys.argv[1:]
     (BASE / "models").mkdir(parents=True, exist_ok=True)
-    if venv_ready():
+    if venv_ready() and models_ready():
         launch_app(args)
         return
     # --- セットアップUI（Tk / stdlibのみ） ---
@@ -106,7 +140,7 @@ def main() -> None:
     root.title("Dettato Studio — セットアップ")
     root.geometry("560x360")
     root.configure(bg="#0B0B10")
-    lbl = tk.Label(root, text="初回セットアップ中です。venv を構築しています…\n（torch のダウンロード等で数分〜十数分かかります）",
+    lbl = tk.Label(root, text="初回セットアップ中です。環境構築とモデルのダウンロードを自動で行います…\n（torch のダウンロード等で数分〜十数分かかります）",
                    bg="#0B0B10", fg="#E5E7EB", justify="left", font=("Yu Gothic UI", 10))
     lbl.pack(anchor="w", padx=14, pady=(12, 6))
     bar = ttk.Progressbar(root, mode="indeterminate"); bar.pack(fill="x", padx=14, pady=4); bar.start(12)
@@ -116,7 +150,10 @@ def main() -> None:
         root.after(0, lambda: (txt.insert("end", msg + "\n"), txt.see("end")))
     def worker():
         try:
-            setup_venv(log)
+            if not venv_ready():
+                setup_venv(log)
+            if not models_ready():
+                download_models(log, progress=lambda pct, msg: root.after(0, lambda: lbl.config(text=f"モデルをダウンロード中… {pct}%")))
             root.after(0, lambda: (launch_app(args), root.destroy()))
         except Exception as e:
             log(f"\nエラー: {e}")

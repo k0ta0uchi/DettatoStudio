@@ -66,7 +66,8 @@ LICENSE / NOTICE / README.md
   ウィンドウが出て、同梱 uv で自動構築する:
   `uv venv venv --python 3.11` → `uv pip install -r requirements.txt`
   （uvがPython本体も自動取得するので、配布先にPythonが無くても動く）
-- 構築済みなら即本体が起動する。判定は `venv\.dettato_ready`
+- 初回起動時は venv 構築に続けて **モデルのダウンロード（4モデル約110MB）まで自動**で行い、そのまま本体が起動する。アプリ単体で起動した場合も、モデル未DLなら起動直後に自動DLが始まる。Settings からはいつでも再DL・保存先変更ができる。
+構築済み＋モデルDL済みなら即本体が起動する。判定は `venv\.dettato_ready`
   （requirements.txt のSHA256）。requirementsを変えると次回起動時に再installされる
 - `models\` と `venv\` は exe と同じフォルダに作られる
 - ログ: セットアップは `launcher_setup.log`、ビルドは `build.log`

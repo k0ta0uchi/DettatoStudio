@@ -1,6 +1,6 @@
 ﻿$ErrorActionPreference = "Continue"
-Set-Location "J:\dettato-gui"
-Start-Transcript -Path "J:\dettato-gui\build.log" -Force
+Set-Location $PSScriptRoot
+Start-Transcript -Path (Join-Path $PSScriptRoot "build.log") -Force
 Write-Output "=== launcher build start $(Get-Date) ==="
 if (-not (Test-Path ".build-venv")) { py -m venv .build-venv; Write-Output "build venv created" }
 & ".\.build-venv\Scripts\python.exe" -m pip install --upgrade pip pyinstaller

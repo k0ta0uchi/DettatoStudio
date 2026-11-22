@@ -1,7 +1,6 @@
-﻿# Hidden background setup: venv作成 + pip install（ログ: setup.log）
-$ErrorActionPreference = "Continue"
-Set-Location "J:\dettato-gui"
-Start-Transcript -Path "J:\dettato-gui\setup.log" -Force
+﻿$ErrorActionPreference = "Continue"
+Set-Location $PSScriptRoot
+Start-Transcript -Path (Join-Path $PSScriptRoot "setup.log") -Force
 Write-Output "=== setup start $(Get-Date) ==="
 if (-not (Test-Path "venv")) {
   python -m venv venv
@@ -11,5 +10,5 @@ if (-not (Test-Path "venv")) {
 & ".\venv\Scripts\python.exe" -m pip install -r requirements.txt
 Write-Output "=== setup done $(Get-Date) ==="
 & ".\venv\Scripts\python.exe" -c "import PySide6, numpy, soundfile, mido; print('IMPORT OK')"
-try { & ".\venv\Scripts\python.exe" -c "import dettato; print('DETTATO OK')" } catch { Write-Output "dettato import check failed (log参照)" }
+try { & ".\venv\Scripts\python.exe" -c "import dettato; print('DETTATO OK')" } catch { Write-Output "dettato import check failed" }
 Stop-Transcript

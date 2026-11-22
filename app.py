@@ -221,8 +221,9 @@ class DownloadWorker(QThread):
 
 # ---------------- Model Dialog ----------------
 class ModelDialog(QDialog):
-    def __init__(self, parent, weights_dir: Path):
+    def __init__(self, parent, weights_dir: Path, auto_start: bool = False):
         super().__init__(parent)
+        self.auto_start = auto_start
         self.setWindowTitle("Models — dettato weights")
         self.resize(560,420); self.weights_dir=weights_dir; self.worker=None
         lay = QVBoxLayout(self)
@@ -239,6 +240,10 @@ class ModelDialog(QDialog):
         self.dl_btn = QPushButton("⬇  4モデルを一括ダウンロード"); self.dl_btn.clicked.connect(self._download)
         close_btn = QPushButton("閉じる"); close_btn.clicked.connect(self.accept)
         btns.addWidget(self.dl_btn); btns.addStretch(1); btns.addWidget(close_btn); lay.addLayout(btns)
+        if auto_start:
+            # 初回起動時の自動DL: 開いたらすぐ開始し、成功したら自動で閉じる
+            from PySide6.QtCore import QTimer as _QT
+            _QT.singleShot(300, self._download)
     def _browse(self):
         d = QFileDialog.getExistingDirectory(self,"モデル保存先", self.path_edit.text())
         if d: self.path_edit.setText(d); self.refresh_status()
@@ -253,7 +258,7 @@ class ModelDialog(QDialog):
         self.worker = DownloadWorker(Path(self.path_edit.text()))
         self.worker.progress.connect(lambda p,m: (self.bar.setValue(p), self.status_label.setText(m)))
         self.worker.log.connect(lambda m: self.logbox.append(m))
-        self.worker.done.connect(lambda r: (self.logbox.append(f"完了: {r}"), self.refresh_status(), self.dl_btn.setEnabled(True)))
+        self.worker.done.connect(lambda r: (self.logbox.append(f"完了: {r}"), self.refresh_status(), self.dl_btn.setEnabled(True), self.auto_start and self.accept()))
         self.worker.failed.connect(lambda e: (self.logbox.append(e), self.dl_btn.setEnabled(True)))
         self.worker.start()
     def selected_dir(self): return Path(self.path_edit.text())
@@ -295,7 +300,11 @@ class MainWindow(QMainWindow):
         self._midi_wav=None; self._result=None
         self._build_ui()
         self._setup_players()
-        if demo: self._load_demo()
+        if demo:
+            self._load_demo()
+        else:
+            # 初回起動時: モデルが揃っていなければ自動でDLする（Settingsからも実行可）
+            QTimer.singleShot(500, self._auto_model_download)
     # --- UI構築（スクショ再現） ---
     def _build_ui(self):
         self.setStyleSheet("""
@@ -570,6 +579,14 @@ class MainWindow(QMainWindow):
         mid.save(f)
     def _clear(self):
         self.tracks=[]; self._set_tracks([]); self.wave.clear(); self.file_label.setText(""); self.audio_path=None; self.duration=0; self._update_status()
+    def _auto_model_download(self):
+        try:
+            from model_manager import all_downloaded
+            if not all_downloaded(self.weights_dir):
+                dlg = ModelDialog(self, self.weights_dir, auto_start=True)
+                dlg.exec()
+        except Exception as ex:
+            print("auto model download check failed:", ex)
     def _open_models(self):
         dlg = ModelDialog(self, self.weights_dir)
         if dlg.exec(): self.weights_dir = dlg.selected_dir()

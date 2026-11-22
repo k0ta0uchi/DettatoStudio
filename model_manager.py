@@ -75,3 +75,21 @@ def download_all(weights_dir: Path, progress_cb=None, log_cb=None):
             log_cb(f"✓ {label}")
     os.environ["DETTATO_WEIGHTS"] = str(weights_dir)
     return str(weights_dir)
+
+
+if __name__ == "__main__":
+    # CLI: python model_manager.py [weights_dir]
+    # ランチャー（launcher.py）が venv の python で呼び、進捗を標準出力で受け取る。
+    # 出力形式: "PROGRESS <0-100> <message>" / それ以外はログ行
+    import sys
+    wd = Path(sys.argv[1]) if len(sys.argv) > 1 else default_weights_dir(Path(__file__).resolve().parent)
+    def _prog(pct, msg):
+        print(f"PROGRESS {pct} {msg}", flush=True)
+    def _log(msg):
+        print(msg, flush=True)
+    try:
+        download_all(wd, progress_cb=_prog, log_cb=_log)
+        print("MODELS DONE", flush=True)
+    except Exception as e:
+        print(f"MODELS FAILED: {e}", flush=True)
+        sys.exit(1)
