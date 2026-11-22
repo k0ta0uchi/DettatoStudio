@@ -64,7 +64,7 @@ def download_all(weights_dir: Path, progress_cb=None, log_cb=None):
     for i, (repo, sub, label, _approx) in enumerate(MODELS):
         base = int(i / total * 100)
         if log_cb:
-            log_cb(f"↓ {label}  ({repo})")
+            log_cb(f">> {label}  ({repo})")
         if progress_cb:
             progress_cb(base, f"Downloading {label} ...")
         dest = weights_dir / sub
@@ -72,7 +72,7 @@ def download_all(weights_dir: Path, progress_cb=None, log_cb=None):
         if progress_cb:
             progress_cb(int((i+1)/total*100), f"Done {label}")
         if log_cb:
-            log_cb(f"✓ {label}")
+            log_cb(f"[OK] {label}")
     os.environ["DETTATO_WEIGHTS"] = str(weights_dir)
     return str(weights_dir)
 
@@ -82,6 +82,12 @@ if __name__ == "__main__":
     # ランチャー（launcher.py）が venv の python で呼び、進捗を標準出力で受け取る。
     # 出力形式: "PROGRESS <0-100> <message>" / それ以外はログ行
     import sys
+    # 日本語Windowsの cp932 では ✓ 等が encode エラーになるため UTF-8 に固定
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     wd = Path(sys.argv[1]) if len(sys.argv) > 1 else default_weights_dir(Path(__file__).resolve().parent)
     def _prog(pct, msg):
         print(f"PROGRESS {pct} {msg}", flush=True)

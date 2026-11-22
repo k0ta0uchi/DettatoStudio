@@ -55,10 +55,16 @@ def download_uv(log) -> Path:
             return BASE / "uv.exe"
     raise RuntimeError("uv zip の中に uv.exe がありませんでした")
 
+def _child_env():
+    env = dict(os.environ)
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
 def run_stream(cmd: list[str], log) -> int:
     log("> " + " ".join(str(c) for c in cmd))
     with open(LOG, "a", encoding="utf-8", errors="ignore") as lf:
-        proc = subprocess.Popen([str(c) for c in cmd], cwd=str(BASE),
+        proc = subprocess.Popen([str(c) for c in cmd], cwd=str(BASE), env=_child_env(),
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, encoding="utf-8", errors="replace",
                                 creationflags=CREATE_NO_WINDOW)
@@ -104,7 +110,7 @@ def download_models(log, progress=None) -> None:
     log("モデルをダウンロードします（4モデル、約110MB）…")
     cmd = [str(VENV_PY), str(BASE / "model_manager.py"), str(wd)]
     with open(LOG, "a", encoding="utf-8", errors="ignore") as lf:
-        proc = subprocess.Popen(cmd, cwd=str(BASE), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        proc = subprocess.Popen(cmd, cwd=str(BASE), env=_child_env(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, encoding="utf-8", errors="replace",
                                 creationflags=CREATE_NO_WINDOW)
         assert proc.stdout is not None
